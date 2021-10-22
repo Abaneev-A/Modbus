@@ -47,146 +47,133 @@ public:
 
     void code3(uint8_t* RX, uint8_t* TX, uint16_t* storage, uint16_t& sizeTX)
     {
-		uint16_t num_reg = 0;
-		num_reg = num_register(RX);
+		uint16_t num_reg = num_register(RX);
 
 		if (num_reg > NUMBER_REG || num_reg < 1)
 		{
 			error_code3(RX, TX, sizeTX);
+			return;
+		}
+
+		uint16_t reg_adr = reg_adress(RX);
+
+		if ((reg_adr <= MAX_REG_ADR) && ((reg_adr + num_reg) <= NUMBER_REG))
+		{
+			uint8_t num_byte = sizeof(num_reg) * num_reg;
+
+			TX[0] = adress;
+			TX[1] = 0x03;
+			TX[2] = num_byte;
+
+			uint8_t i;
+			for (i = 0; i < num_reg; i++)
+			{
+				uint8_t value_regH[5] = { 0 };
+				uint8_t value_regL[5] = { 0 };
+				value_regH[i] = (uint8_t)(storage[reg_adr + i] >> 8);
+				value_regL[i] = (uint8_t)(storage[reg_adr + i] & 0x00FF);
+				TX[3 + 2 * i] = value_regH[i];
+				TX[4 + 2 * i] = value_regL[i];
+			}
+
+			i--;
+
+			uint16_t CRC = crc_16(TX, 5 + 2 * i); 
+
+			TX[5 + 2 * i] = (uint8_t)(CRC >> 8);
+			TX[6 + 2 * i] = (uint8_t)(CRC & 0x00FF);
+
+			sizeTX = 7 + 2 * i;
 		}
 		else
 		{
-			uint16_t reg_adr = 0;
-			reg_adr = reg_adress(RX);
-
-			if ((reg_adr <= MAX_REG_ADR) && ((reg_adr + num_reg) <= NUMBER_REG))
-			{
-				uint8_t num_byte = 0;
-				num_byte = sizeof(num_reg) * num_reg;
-
-				TX[0] = adress;
-				TX[1] = 0x03;
-				TX[2] = num_byte;
-
-				uint8_t i;
-				for (i = 0; i < num_reg; i++)
-				{
-					uint8_t value_regH[5] = { 0 };
-					uint8_t value_regL[5] = { 0 };
-					value_regH[i] = (uint8_t)(storage[reg_adr + i] >> 8);
-					value_regL[i] = (uint8_t)(storage[reg_adr + i] & 0x00FF);
-					TX[3 + 2 * i] = value_regH[i];
-					TX[4 + 2 * i] = value_regL[i];
-				}
-
-				i--;
-
-				uint16_t CRC = 0;
-				CRC = crc_16(TX, 5 + 2 * i);
-
-				TX[5 + 2 * i] = (uint8_t)(CRC >> 8);
-				TX[6 + 2 * i] = (uint8_t)(CRC & 0x00FF);
-
-				sizeTX = 7 + 2 * i;
-			}
-			else
-			{
-				error_code2(RX, TX, sizeTX);
-			}
+			error_code2(RX, TX, sizeTX);
 		}
     }
 
     void code6(uint8_t* RX, uint8_t* TX, uint16_t* storage, uint16_t& sizeTX)
     {
-		uint16_t new_num = 0;
-		new_num = new_number(RX);
+		uint16_t new_num = new_number(RX);
 		
 		if (new_num > MAX_NUMBER)
 		{
 			error_code3(RX, TX, sizeTX);
+			return;
+		}
+
+		uint16_t reg_adr = reg_adress(RX);
+
+		if (reg_adr > MAX_REG_ADR)
+		{
+				error_code2(RX, TX, sizeTX);
+				return;
 		}
 		else
 		{
-			uint16_t reg_adr = 0;
-			reg_adr = reg_adress(RX);
+			TX[0] = adress;
+			TX[1] = 0x06;
+			TX[2] = RX[2];
+			TX[3] = RX[3];
 
-			if (reg_adr > MAX_REG_ADR)
-			{
-				error_code2(RX, TX, sizeTX);
-			}
-			else
-			{
-				TX[0] = adress;
-				TX[1] = 0x06;
-				TX[2] = RX[2];
-				TX[3] = RX[3];
+			storage[reg_adr] = new_num;
 
-				storage[reg_adr] = new_num;
+			uint8_t value_regH06 = 0;
+			uint8_t value_regL06 = 0;
+			value_regH06 = (uint8_t)(storage[reg_adr] >> 8);
+			value_regL06 = (uint8_t)(storage[reg_adr] & 0x00FF);
 
-				uint8_t value_regH06 = 0;
-				uint8_t value_regL06 = 0;
-				value_regH06 = (uint8_t)(storage[reg_adr] >> 8);
-				value_regL06 = (uint8_t)(storage[reg_adr] & 0x00FF);
+			TX[4] = value_regH06;
+			TX[5] = value_regL06;
 
-				TX[4] = value_regH06;
-				TX[5] = value_regL06;
+			uint16_t CRC = crc_16(TX, 6);
 
-				uint16_t CRC = 0;
-				CRC = crc_16(TX, 6);
+			TX[6] = (uint8_t)(CRC >> 8);
+			TX[7] = (uint8_t)(CRC & 0x00FF);
 
-				TX[6] = (uint8_t)(CRC >> 8);
-				TX[7] = (uint8_t)(CRC & 0x00FF);
-
-				sizeTX = 8;
-			}
+			sizeTX = 8;
 		}
     }
 
     void code10(uint8_t* RX, uint8_t* TX, uint16_t* storage, uint16_t& sizeTX)
     {
-		uint16_t num_reg = 0;
-		num_reg = num_register(RX);
-		
+		uint16_t num_reg = num_register(RX);
 
 		if ((num_reg > NUMBER_REG || num_reg < 1) || (RX[6] != (num_reg * 2)))
 		{
 			error_code3(RX, TX, sizeTX);
+			return;
+		}
+
+		uint16_t reg_adr = reg_adress(RX);
+
+		if ((reg_adr <= MAX_REG_ADR) && ((reg_adr + num_reg) <= NUMBER_REG))
+		{
+			TX[0] = adress;
+			TX[1] = 0x10;
+			TX[2] = RX[2];
+			TX[3] = RX[3];
+			TX[4] = RX[4];
+			TX[5] = RX[5];
+
+			uint8_t i;
+			for (i = 0; i < num_reg; i++)
+			{
+				uint16_t new_num = 0;
+				new_num = ((uint16_t)RX[8 + 2 * i]) | (((uint16_t)RX[7 + 2 * i]) << 8);
+				storage[reg_adr + i] = new_num;
+			}
+
+			uint16_t CRC = crc_16(TX, 6);
+
+			TX[6] = (uint8_t)(CRC >> 8);
+			TX[7] = (uint8_t)(CRC & 0x00FF);
+
+			sizeTX = 8;
 		}
 		else
 		{
-			uint16_t reg_adr = 0;
-			reg_adr = reg_adress(RX);
-
-			if ((reg_adr <= MAX_REG_ADR) && ((reg_adr + num_reg) <= NUMBER_REG))
-			{
-				TX[0] = adress;
-				TX[1] = 0x10;
-				TX[2] = RX[2];
-				TX[3] = RX[3];
-				TX[4] = RX[4];
-				TX[5] = RX[5];
-
-				uint8_t i;
-				for (i = 0; i < num_reg; i++)
-				{
-					uint16_t new_num = 0;
-					new_num = ((uint16_t)RX[8 + 2 * i]) | (((uint16_t)RX[7 + 2 * i]) << 8);
-					storage[reg_adr + i] = new_num;
-				}
-
-				uint16_t CRC = 0;
-				CRC = crc_16(TX, 6);
-
-				TX[6] = (uint8_t)(CRC >> 8);
-				TX[7] = (uint8_t)(CRC & 0x00FF);
-
-				sizeTX = 8;
-			}
-			else
-			{
-				error_code2(RX, TX, sizeTX);
-			}			
-		}
+			error_code2(RX, TX, sizeTX);
+		}					
     }
 
 	uint16_t crc_16(uint8_t* buffer, uint16_t buffer_size)
@@ -218,40 +205,28 @@ public:
 
 	void error_code1(uint8_t* RX, uint8_t* TX, uint16_t& sizeTX)
 	{
-		TX[0] = adress;
-		TX[1] = (RX[1] | 0b10000000);
 		TX[2] = 1;
-
-		uint16_t CRC = 0;
-		CRC = crc_16(TX, 3);
-
-		TX[3] = (uint8_t)(CRC >> 8);
-		TX[4] = (uint8_t)(CRC & 0x00FF);
-		sizeTX = 5;
+		error(RX, TX, sizeTX);
 	}
 
 	void error_code2(uint8_t* RX, uint8_t* TX, uint16_t& sizeTX)
 	{
-		TX[0] = adress;
-		TX[1] = (RX[1] | 0b10000000);
 		TX[2] = 2;
-
-		uint16_t CRC = 0;
-		CRC = crc_16(TX, 3);
-
-		TX[3] = (uint8_t)(CRC >> 8);
-		TX[4] = (uint8_t)(CRC & 0x00FF);
-		sizeTX = 5;
+		error(RX, TX, sizeTX);
 	}
 
 	void error_code3(uint8_t* RX, uint8_t* TX, uint16_t& sizeTX)
 	{
+		TX[2] = 3;
+		error(RX, TX, sizeTX);
+	}
+
+	void error(uint8_t* RX, uint8_t* TX, uint16_t& sizeTX)
+	{
 		TX[0] = adress;
 		TX[1] = (RX[1] | 0b10000000);
-		TX[2] = 3;
 
-		uint16_t CRC = 0;
-		CRC = crc_16(TX, 3);
+		uint16_t CRC = crc_16(TX, 3);
 
 		TX[3] = (uint8_t)(CRC >> 8);
 		TX[4] = (uint8_t)(CRC & 0x00FF);
@@ -260,23 +235,17 @@ public:
 
 	uint16_t reg_adress(uint8_t* RX)
 	{
-		uint16_t reg_adr = 0;
-		reg_adr = ((uint16_t)RX[3]) | (((uint16_t)RX[2]) << 8);
-		return reg_adr;
+		return ((uint16_t)RX[3]) | (((uint16_t)RX[2]) << 8);
 	}
 
 	uint16_t num_register(uint8_t* RX)
 	{
-		uint16_t num_reg = 0;
-		num_reg = ((uint16_t)RX[5]) | (((uint16_t)RX[4]) << 8);
-		return num_reg;
+		return ((uint16_t)RX[5]) | (((uint16_t)RX[4]) << 8);
 	}
 
 	uint16_t new_number(uint8_t* RX)
 	{
-		uint16_t new_number = 0;
-		new_number = ((uint16_t)RX[5]) | (((uint16_t)RX[4]) << 8);
-		return new_number;
+		return ((uint16_t)RX[5]) | (((uint16_t)RX[4]) << 8);
 	}
 };
 
