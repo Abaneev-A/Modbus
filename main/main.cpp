@@ -2,10 +2,6 @@
 #include <stdint.h>
 #include "Modbus.h"
 
-#define NUMBER_REG 4
-#define MAX_REG_ADR 3
-#define MAX_NUMBER 1000
-
 using namespace std;
 
 enum param {

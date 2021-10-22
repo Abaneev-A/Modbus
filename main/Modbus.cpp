@@ -38,7 +38,7 @@ void Modbus::code3(uint8_t* RX, uint8_t* TX, uint16_t* storage, uint16_t& sizeTX
 	}
 
 	uint16_t reg_adr = reg_adress(RX);
-	if ((reg_adr > MAX_REG_ADR) && ((reg_adr + num_reg) > NUMBER_REG))
+	if ((reg_adr > MAX_REG_ADR) || ((reg_adr + num_reg) > NUMBER_REG))
 	{
 		error(RX, TX, sizeTX, 2);
 		return;
@@ -124,7 +124,7 @@ void Modbus::code10(uint8_t* RX, uint8_t* TX, uint16_t* storage, uint16_t& sizeT
 
 	uint16_t reg_adr = reg_adress(RX);
 
-	if ((reg_adr > MAX_REG_ADR) && ((reg_adr + num_reg) > NUMBER_REG))
+	if ((reg_adr > MAX_REG_ADR) || ((reg_adr + num_reg) > NUMBER_REG))
 	{
 		error(RX, TX, sizeTX, 2);
 		return;
