@@ -1,8 +1,8 @@
 #include "Modbus.h"
 
-Modbus::Modbus(uint8_t adress)
+Modbus::Modbus(uint8_t address)
 {
-	this->adress = adress;
+	this->address = address;
 }
 
 void Modbus::parsing(uint8_t* RX, uint8_t* TX, uint16_t* storage, uint16_t sizeRX, uint16_t& sizeTX)
@@ -38,6 +38,7 @@ void Modbus::code3(uint8_t* RX, uint8_t* TX, uint16_t* storage, uint16_t& sizeTX
 	}
 
 	uint16_t reg_adr = reg_adress(RX);
+
 	if ((reg_adr > MAX_REG_ADR) || ((reg_adr + num_reg) > NUMBER_REG))
 	{
 		error(RX, TX, sizeTX, 2);
@@ -46,29 +47,26 @@ void Modbus::code3(uint8_t* RX, uint8_t* TX, uint16_t* storage, uint16_t& sizeTX
 
 	uint8_t num_byte = sizeof(num_reg) * num_reg;
 
-	TX[0] = adress;
+	TX[0] = address;
 	TX[1] = 0x03;
 	TX[2] = num_byte;
 
-	uint8_t i;
-	for (i = 0; i < num_reg; i++)
+	uint8_t index = 0;
+
+	for (uint8_t i = 0; i < num_reg; i++)
 	{
-		uint8_t value_regH[5] = { 0 };
-		uint8_t value_regL[5] = { 0 };
-		value_regH[i] = (uint8_t)(storage[reg_adr + i] >> 8);
-		value_regL[i] = (uint8_t)(storage[reg_adr + i] & 0x00FF);
-		TX[3 + 2 * i] = value_regH[i];
-		TX[4 + 2 * i] = value_regL[i];
+		TX[3 + 2 * i] = get_high_byte(storage[reg_adr + i]);
+		TX[4 + 2 * i] = get_low_byte(storage[reg_adr + i]);
+
+		index = i;
 	}
 
-	i--;
+	uint16_t CRC = crc_16(TX, 5 + 2 * index);
 
-	uint16_t CRC = crc_16(TX, 5 + 2 * i);
+	TX[5 + 2 * index] = get_high_byte(CRC);
+	TX[6 + 2 * index] = get_low_byte(CRC);
 
-	TX[5 + 2 * i] = (uint8_t)(CRC >> 8);
-	TX[6 + 2 * i] = (uint8_t)(CRC & 0x00FF);
-
-	sizeTX = 7 + 2 * i;
+	sizeTX = 7 + 2 * index;
 }
 
 void Modbus::code6(uint8_t* RX, uint8_t* TX, uint16_t* storage, uint16_t& sizeTX)
@@ -89,25 +87,20 @@ void Modbus::code6(uint8_t* RX, uint8_t* TX, uint16_t* storage, uint16_t& sizeTX
 		return;
 	}
 
-	TX[0] = adress;
+	TX[0] = address;
 	TX[1] = 0x06;
 	TX[2] = RX[2];
 	TX[3] = RX[3];
 
 	storage[reg_adr] = new_num;
 
-	uint8_t value_regH06 = 0;
-	uint8_t value_regL06 = 0;
-	value_regH06 = (uint8_t)(storage[reg_adr] >> 8);
-	value_regL06 = (uint8_t)(storage[reg_adr] & 0x00FF);
-
-	TX[4] = value_regH06;
-	TX[5] = value_regL06;
+	TX[4] = get_high_byte(storage[reg_adr]);
+	TX[5] = get_low_byte(storage[reg_adr]);
 
 	uint16_t CRC = crc_16(TX, 6);
 
-	TX[6] = (uint8_t)(CRC >> 8);
-	TX[7] = (uint8_t)(CRC & 0x00FF);
+	TX[6] = get_high_byte(CRC);
+	TX[7] = get_low_byte(CRC);
 
 	sizeTX = 8;
 }
@@ -130,7 +123,7 @@ void Modbus::code10(uint8_t* RX, uint8_t* TX, uint16_t* storage, uint16_t& sizeT
 		return;
 	}
 
-	TX[0] = adress;
+	TX[0] = address;
 	TX[1] = 0x10;
 	TX[2] = RX[2];
 	TX[3] = RX[3];
@@ -140,15 +133,13 @@ void Modbus::code10(uint8_t* RX, uint8_t* TX, uint16_t* storage, uint16_t& sizeT
 	uint8_t i;
 	for (i = 0; i < num_reg; i++)
 	{
-		uint16_t new_num = 0;
-		new_num = ((uint16_t)RX[8 + 2 * i]) | (((uint16_t)RX[7 + 2 * i]) << 8);
-		storage[reg_adr + i] = new_num;
+		storage[reg_adr + i] = get_word(RX[7 + 2 * i], RX[8 + 2 * i]);
 	}
 
 	uint16_t CRC = crc_16(TX, 6);
 
-	TX[6] = (uint8_t)(CRC >> 8);
-	TX[7] = (uint8_t)(CRC & 0x00FF);
+	TX[6] = get_high_byte(CRC);
+	TX[7] = get_low_byte(CRC);
 
 	sizeTX = 8;
 }
@@ -182,28 +173,43 @@ uint16_t Modbus::crc_16(uint8_t* buffer, uint16_t buffer_size)
 
 void Modbus::error(uint8_t* RX, uint8_t* TX, uint16_t& sizeTX, uint16_t exception_code)
 {
-	TX[0] = adress;
+	TX[0] = address;
 	TX[1] = (RX[1] | 0b10000000);
 	TX[2] = exception_code;
 
 	uint16_t CRC = crc_16(TX, 3);
 
-	TX[3] = (uint8_t)(CRC >> 8);
-	TX[4] = (uint8_t)(CRC & 0x00FF);
+	TX[3] = get_high_byte(CRC);
+	TX[4] = get_low_byte(CRC);
 	sizeTX = 5;
 }
 
 uint16_t Modbus::reg_adress(uint8_t* RX)
 {
-	return ((uint16_t)RX[3]) | (((uint16_t)RX[2]) << 8);
+	return get_word(RX[2], RX[3]);
 }
 
 uint16_t Modbus::num_register(uint8_t* RX)
 {
-	return ((uint16_t)RX[5]) | (((uint16_t)RX[4]) << 8);
+	return get_word(RX[4], RX[5]);
 }
 
 uint16_t Modbus::new_number(uint8_t* RX)
 {
-	return ((uint16_t)RX[5]) | (((uint16_t)RX[4]) << 8);
+	return get_word(RX[4], RX[5]);
+}
+
+uint8_t Modbus::get_high_byte(uint16_t word)
+{
+	return word >> 8;
+}
+
+uint8_t Modbus::get_low_byte(uint16_t word)
+{
+	return word & 0x00FF;
+}
+
+uint16_t Modbus::get_word(uint8_t high, uint8_t low)
+{
+	return  (((uint16_t)high) << 8) | ((uint16_t)low);
 }
