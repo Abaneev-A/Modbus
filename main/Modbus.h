@@ -10,13 +10,15 @@ class Modbus
 {
 	uint8_t address;
 
+	uint8_t code;
+
 	void code3(uint8_t* RX, uint8_t* TX, uint16_t* storage, uint16_t& sizeTX);
 
 	void code6(uint8_t* RX, uint8_t* TX, uint16_t* storage, uint16_t& sizeTX);
 
 	void code10(uint8_t* RX, uint8_t* TX, uint16_t* storage, uint16_t& sizeTX);
 
-	void error(uint8_t* RX, uint8_t* TX, uint16_t& sizeTX, uint16_t exception_code);
+	void error(uint8_t& code, uint8_t* TX, uint16_t& sizeTX, uint16_t exception_code);
 
 	uint16_t reg_adress(uint8_t* RX);
 

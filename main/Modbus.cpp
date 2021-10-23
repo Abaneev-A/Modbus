@@ -9,7 +9,9 @@ void Modbus::parsing(uint8_t* RX, uint8_t* TX, uint16_t* storage, uint16_t sizeR
 {
 	if (1)//crc_16(RX, sizeRX) == 0
 	{
-		switch (RX[1])
+		code = RX[1];
+
+		switch (code)
 		{
 		case 0x03:
 			code3(RX, TX, storage, sizeTX);
@@ -21,7 +23,7 @@ void Modbus::parsing(uint8_t* RX, uint8_t* TX, uint16_t* storage, uint16_t sizeR
 			code10(RX, TX, storage, sizeTX);
 			break;
 		default:
-			error(RX, TX, sizeTX, 1);
+			error(code, TX, sizeTX, 1);
 			break;
 		}
 	}
@@ -33,7 +35,7 @@ void Modbus::code3(uint8_t* RX, uint8_t* TX, uint16_t* storage, uint16_t& sizeTX
 
 	if (num_reg > NUMBER_REG || num_reg < 1)
 	{
-		error(RX, TX, sizeTX, 3);
+		error(code, TX, sizeTX, 3);
 		return;
 	}
 
@@ -41,7 +43,7 @@ void Modbus::code3(uint8_t* RX, uint8_t* TX, uint16_t* storage, uint16_t& sizeTX
 
 	if ((reg_adr > MAX_REG_ADR) || ((reg_adr + num_reg) > NUMBER_REG))
 	{
-		error(RX, TX, sizeTX, 2);
+		error(code, TX, sizeTX, 2);
 		return;
 	}
 
@@ -51,15 +53,13 @@ void Modbus::code3(uint8_t* RX, uint8_t* TX, uint16_t* storage, uint16_t& sizeTX
 	TX[1] = 0x03;
 	TX[2] = num_byte;
 
-	uint8_t index = 0;
-
 	for (uint8_t i = 0; i < num_reg; i++)
 	{
 		TX[3 + 2 * i] = get_high_byte(storage[reg_adr + i]);
 		TX[4 + 2 * i] = get_low_byte(storage[reg_adr + i]);
-
-		index = i;
 	}
+
+	uint8_t index = num_reg - 1;
 
 	uint16_t CRC = crc_16(TX, 5 + 2 * index);
 
@@ -75,7 +75,7 @@ void Modbus::code6(uint8_t* RX, uint8_t* TX, uint16_t* storage, uint16_t& sizeTX
 
 	if (new_num > MAX_NUMBER)
 	{
-		error(RX, TX, sizeTX, 3);
+		error(code, TX, sizeTX, 3);
 		return;
 	}
 
@@ -83,17 +83,16 @@ void Modbus::code6(uint8_t* RX, uint8_t* TX, uint16_t* storage, uint16_t& sizeTX
 
 	if (reg_adr > MAX_REG_ADR)
 	{
-		error(RX, TX, sizeTX, 2);
+		error(code, TX, sizeTX, 2);
 		return;
 	}
+
+	storage[reg_adr] = new_num;
 
 	TX[0] = address;
 	TX[1] = 0x06;
 	TX[2] = RX[2];
 	TX[3] = RX[3];
-
-	storage[reg_adr] = new_num;
-
 	TX[4] = get_high_byte(storage[reg_adr]);
 	TX[5] = get_low_byte(storage[reg_adr]);
 
@@ -111,7 +110,7 @@ void Modbus::code10(uint8_t* RX, uint8_t* TX, uint16_t* storage, uint16_t& sizeT
 
 	if ((num_reg > NUMBER_REG || num_reg < 1) || (RX[6] != (num_reg * 2)))
 	{
-		error(RX, TX, sizeTX, 3);
+		error(code, TX, sizeTX, 3);
 		return;
 	}
 
@@ -119,8 +118,13 @@ void Modbus::code10(uint8_t* RX, uint8_t* TX, uint16_t* storage, uint16_t& sizeT
 
 	if ((reg_adr > MAX_REG_ADR) || ((reg_adr + num_reg) > NUMBER_REG))
 	{
-		error(RX, TX, sizeTX, 2);
+		error(code, TX, sizeTX, 2);
 		return;
+	}
+
+	for (uint8_t i = 0; i < num_reg; i++)
+	{
+		storage[reg_adr + i] = get_word(RX[7 + 2 * i], RX[8 + 2 * i]);
 	}
 
 	TX[0] = address;
@@ -129,12 +133,6 @@ void Modbus::code10(uint8_t* RX, uint8_t* TX, uint16_t* storage, uint16_t& sizeT
 	TX[3] = RX[3];
 	TX[4] = RX[4];
 	TX[5] = RX[5];
-
-	uint8_t i;
-	for (i = 0; i < num_reg; i++)
-	{
-		storage[reg_adr + i] = get_word(RX[7 + 2 * i], RX[8 + 2 * i]);
-	}
 
 	uint16_t CRC = crc_16(TX, 6);
 
@@ -171,10 +169,10 @@ uint16_t Modbus::crc_16(uint8_t* buffer, uint16_t buffer_size)
 	return crc;
 }
 
-void Modbus::error(uint8_t* RX, uint8_t* TX, uint16_t& sizeTX, uint16_t exception_code)
+void Modbus::error(uint8_t& code, uint8_t* TX, uint16_t& sizeTX, uint16_t exception_code)
 {
 	TX[0] = address;
-	TX[1] = (RX[1] | 0b10000000);
+	TX[1] = code | 0b10000000;
 	TX[2] = exception_code;
 
 	uint16_t CRC = crc_16(TX, 3);
