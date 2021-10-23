@@ -9,7 +9,7 @@ void Modbus::parsing(uint8_t* RX, uint8_t* TX, uint16_t* storage, uint16_t sizeR
 {
 	if (1)//crc_16(RX, sizeRX) == 0
 	{
-		code = RX[1];
+		uint8_t code = RX[1];
 
 		switch (code)
 		{
@@ -35,7 +35,7 @@ void Modbus::code3(uint8_t* RX, uint8_t* TX, uint16_t* storage, uint16_t& sizeTX
 
 	if (num_reg > NUMBER_REG || num_reg < 1)
 	{
-		error(code, TX, sizeTX, 3);
+		error(3, TX, sizeTX, 3);
 		return;
 	}
 
@@ -43,7 +43,7 @@ void Modbus::code3(uint8_t* RX, uint8_t* TX, uint16_t* storage, uint16_t& sizeTX
 
 	if ((reg_adr > MAX_REG_ADR) || ((reg_adr + num_reg) > NUMBER_REG))
 	{
-		error(code, TX, sizeTX, 2);
+		error(3, TX, sizeTX, 2);
 		return;
 	}
 
@@ -75,7 +75,7 @@ void Modbus::code6(uint8_t* RX, uint8_t* TX, uint16_t* storage, uint16_t& sizeTX
 
 	if (new_num > MAX_NUMBER)
 	{
-		error(code, TX, sizeTX, 3);
+		error(6, TX, sizeTX, 3);
 		return;
 	}
 
@@ -83,7 +83,7 @@ void Modbus::code6(uint8_t* RX, uint8_t* TX, uint16_t* storage, uint16_t& sizeTX
 
 	if (reg_adr > MAX_REG_ADR)
 	{
-		error(code, TX, sizeTX, 2);
+		error(6, TX, sizeTX, 2);
 		return;
 	}
 
@@ -91,8 +91,8 @@ void Modbus::code6(uint8_t* RX, uint8_t* TX, uint16_t* storage, uint16_t& sizeTX
 
 	TX[0] = address;
 	TX[1] = 0x06;
-	TX[2] = RX[2];
-	TX[3] = RX[3];
+	TX[2] = RX[2]; //Адрес первого регистра Hi байт
+	TX[3] = RX[3]; //Адрес первого регистра Lo байт
 	TX[4] = get_high_byte(storage[reg_adr]);
 	TX[5] = get_low_byte(storage[reg_adr]);
 
@@ -110,7 +110,7 @@ void Modbus::code10(uint8_t* RX, uint8_t* TX, uint16_t* storage, uint16_t& sizeT
 
 	if ((num_reg > NUMBER_REG || num_reg < 1) || (RX[6] != (num_reg * 2)))
 	{
-		error(code, TX, sizeTX, 3);
+		error(10, TX, sizeTX, 3);
 		return;
 	}
 
@@ -118,7 +118,7 @@ void Modbus::code10(uint8_t* RX, uint8_t* TX, uint16_t* storage, uint16_t& sizeT
 
 	if ((reg_adr > MAX_REG_ADR) || ((reg_adr + num_reg) > NUMBER_REG))
 	{
-		error(code, TX, sizeTX, 2);
+		error(10, TX, sizeTX, 2);
 		return;
 	}
 
@@ -129,10 +129,10 @@ void Modbus::code10(uint8_t* RX, uint8_t* TX, uint16_t* storage, uint16_t& sizeT
 
 	TX[0] = address;
 	TX[1] = 0x10;
-	TX[2] = RX[2];
-	TX[3] = RX[3];
-	TX[4] = RX[4];
-	TX[5] = RX[5];
+	TX[2] = RX[2]; //Адрес первого регистра Hi байт
+	TX[3] = RX[3]; //Адрес первого регистра Lo байт
+	TX[4] = RX[4]; //Кол-во записанных рег. Hi байт
+	TX[5] = RX[5]; //Кол-во записанных рег. Lo байт
 
 	uint16_t CRC = crc_16(TX, 6);
 
@@ -169,7 +169,7 @@ uint16_t Modbus::crc_16(uint8_t* buffer, uint16_t buffer_size)
 	return crc;
 }
 
-void Modbus::error(uint8_t& code, uint8_t* TX, uint16_t& sizeTX, uint16_t exception_code)
+void Modbus::error(uint8_t code, uint8_t* TX, uint16_t& sizeTX, uint16_t exception_code)
 {
 	TX[0] = address;
 	TX[1] = code | 0b10000000;
