@@ -91,7 +91,7 @@ void Modbus::code6(uint8_t* RX, uint8_t* TX, uint16_t* storage, uint16_t& sizeTX
 
 	TX[0] = address;
 	TX[1] = 0x06;
-	TX[2] = RX[2]; //Адрес первого регистра Hi байт
+	TX[2] = RX[2]; //Адрес первого регистра Hi байт 
 	TX[3] = RX[3]; //Адрес первого регистра Lo байт
 	TX[4] = get_high_byte(storage[reg_adr]);
 	TX[5] = get_low_byte(storage[reg_adr]);
