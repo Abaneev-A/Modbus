@@ -7,7 +7,7 @@ Modbus::Modbus(uint8_t address)
 
 void Modbus::parsing(uint8_t* RX, uint8_t* TX, uint16_t* storage, uint16_t sizeRX, uint16_t& sizeTX)
 {
-	if (1)//crc_16(RX, sizeRX) == 0
+	if (crc_16(RX, sizeRX) == 0)
 	{
 		uint8_t code = RX[1];
 
@@ -61,10 +61,7 @@ void Modbus::code3(uint8_t* RX, uint8_t* TX, uint16_t* storage, uint16_t& sizeTX
 
 	uint8_t index = num_reg - 1;
 
-	uint16_t CRC = crc_16(TX, 5 + 2 * index);
-
-	TX[5 + 2 * index] = get_high_byte(CRC);
-	TX[6 + 2 * index] = get_low_byte(CRC);
+	add_crc(TX, 5 + 2 * index);
 
 	sizeTX = 7 + 2 * index;
 }
@@ -96,10 +93,7 @@ void Modbus::code6(uint8_t* RX, uint8_t* TX, uint16_t* storage, uint16_t& sizeTX
 	TX[4] = get_high_byte(storage[reg_adr]);
 	TX[5] = get_low_byte(storage[reg_adr]);
 
-	uint16_t CRC = crc_16(TX, 6);
-
-	TX[6] = get_high_byte(CRC);
-	TX[7] = get_low_byte(CRC);
+	add_crc(TX, 6);
 
 	sizeTX = 8;
 }
@@ -134,10 +128,7 @@ void Modbus::code10(uint8_t* RX, uint8_t* TX, uint16_t* storage, uint16_t& sizeT
 	TX[4] = RX[4]; //Кол-во записанных рег. Hi байт
 	TX[5] = RX[5]; //Кол-во записанных рег. Lo байт
 
-	uint16_t CRC = crc_16(TX, 6);
-
-	TX[6] = get_high_byte(CRC);
-	TX[7] = get_low_byte(CRC);
+	add_crc(TX, 6);
 
 	sizeTX = 8;
 }
@@ -210,4 +201,12 @@ uint8_t Modbus::get_low_byte(uint16_t word)
 uint16_t Modbus::get_word(uint8_t high, uint8_t low)
 {
 	return  (((uint16_t)high) << 8) | ((uint16_t)low);
+}
+
+void Modbus::add_crc(uint8_t* TX, uint8_t index)
+{
+	uint16_t CRC = crc_16(TX, index);
+
+	TX[index] = get_high_byte(CRC);
+	TX[++index] = get_low_byte(CRC);
 }

@@ -30,6 +30,8 @@ class Modbus
 
 	uint16_t get_word(uint8_t high, uint8_t low);
 
+	void add_crc(uint8_t* TX, uint8_t);
+
 public:
 
 	Modbus(uint8_t adress);
