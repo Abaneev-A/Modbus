@@ -103,7 +103,7 @@ void Modbus::code6(uint8_t* RX, uint8_t* TX, uint16_t* storage, uint16_t& sizeTX
 
 	sizeTX = 8;
 }
-
+//Адрес первого регистра Hi байт 
 void Modbus::code10(uint8_t* RX, uint8_t* TX, uint16_t* storage, uint16_t& sizeTX)
 {
 	uint16_t num_reg = num_register(RX);
