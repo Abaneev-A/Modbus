@@ -91,8 +91,8 @@ void Modbus::code6(uint8_t* RX, uint8_t* TX, uint16_t* storage, uint16_t& sizeTX
 
 	TX[0] = address;
 	TX[1] = 0x06;
-	TX[2] = RX[2]; //Адрес первого регистра Hi байт 
-	TX[3] = RX[3]; //Адрес первого регистра Lo байт
+	TX[2] = RX[2]; //РђРґСЂРµСЃ РїРµСЂРІРѕРіРѕ СЂРµРіРёСЃС‚СЂР° Hi Р±Р°Р№С‚ 
+	TX[3] = RX[3]; //РђРґСЂРµСЃ РїРµСЂРІРѕРіРѕ СЂРµРіРёСЃС‚СЂР° Lo Р±Р°Р№С‚
 	TX[4] = get_high_byte(storage[reg_adr]);
 	TX[5] = get_low_byte(storage[reg_adr]);
 
@@ -103,7 +103,7 @@ void Modbus::code6(uint8_t* RX, uint8_t* TX, uint16_t* storage, uint16_t& sizeTX
 
 	sizeTX = 8;
 }
-//Адрес первого регистра Hi байт 
+
 void Modbus::code10(uint8_t* RX, uint8_t* TX, uint16_t* storage, uint16_t& sizeTX)
 {
 	uint16_t num_reg = num_register(RX);
@@ -129,10 +129,10 @@ void Modbus::code10(uint8_t* RX, uint8_t* TX, uint16_t* storage, uint16_t& sizeT
 
 	TX[0] = address;
 	TX[1] = 0x10;
-	TX[2] = RX[2]; //Адрес первого регистра Hi байт
-	TX[3] = RX[3]; //Адрес первого регистра Lo байт
-	TX[4] = RX[4]; //Кол-во записанных рег. Hi байт
-	TX[5] = RX[5]; //Кол-во записанных рег. Lo байт
+	TX[2] = RX[2]; //РђРґСЂРµСЃ РїРµСЂРІРѕРіРѕ СЂРµРіРёСЃС‚СЂР° Hi Р±Р°Р№С‚
+	TX[3] = RX[3]; //РђРґСЂРµСЃ РїРµСЂРІРѕРіРѕ СЂРµРіРёСЃС‚СЂР° Lo Р±Р°Р№С‚
+	TX[4] = RX[4]; //РљРѕР»-РІРѕ Р·Р°РїРёСЃР°РЅРЅС‹С… СЂРµРі. Hi Р±Р°Р№С‚
+	TX[5] = RX[5]; //РљРѕР»-РІРѕ Р·Р°РїРёСЃР°РЅРЅС‹С… СЂРµРі. Lo Р±Р°Р№С‚
 
 	uint16_t CRC = crc_16(TX, 6);
 
