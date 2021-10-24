@@ -104,7 +104,7 @@ void Modbus::code10(uint8_t* RX, uint8_t* TX, uint16_t* storage, uint16_t& sizeT
 
 	if ((num_reg > NUMBER_REG || num_reg < 1) || (RX[6] != (num_reg * 2)))
 	{
-		error(10, TX, sizeTX, 3);
+		error(0x10, TX, sizeTX, 3);
 		return;
 	}
 
@@ -112,7 +112,7 @@ void Modbus::code10(uint8_t* RX, uint8_t* TX, uint16_t* storage, uint16_t& sizeT
 
 	if ((reg_adr > MAX_REG_ADR) || ((reg_adr + num_reg) > NUMBER_REG))
 	{
-		error(10, TX, sizeTX, 2);
+		error(0x10, TX, sizeTX, 2);
 		return;
 	}
 
@@ -166,10 +166,7 @@ void Modbus::error(uint8_t code, uint8_t* TX, uint16_t& sizeTX, uint16_t excepti
 	TX[1] = code | 0b10000000;
 	TX[2] = exception_code;
 
-	uint16_t CRC = crc_16(TX, 3);
-
-	TX[3] = get_high_byte(CRC);
-	TX[4] = get_low_byte(CRC);
+	add_crc(TX, 3);
 	sizeTX = 5;
 }
 
